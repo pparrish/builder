@@ -1,0 +1,236 @@
+function get_file_lines( f )
+	local file = fs.open(f, "r")
+	local l= 0
+	while file.readLine() do l= l+1 end
+	file.close()
+
+	return l
+end
+
+
+function get_steps( ... )
+
+	local steps = {}
+	steps.deltas = {}
+	steps.deltas.mayor= 0
+	steps.deltas.c = 0
+	operation = false
+	steps.sizes= {}
+
+	for i, v in ipairs(arg) do
+		if operation then
+			steps.deltas[steps.deltas.c] = v - steps.deltas[steps.deltas.c]
+			if(steps.deltas.c == 0) then steps.deltas.c = steps.deltas.c -1 end
+			if(math.abs(steps.deltas[steps.deltas.c]) > steps.deltas.mayor) then
+				steps.deltas.mayor= math.abs(steps.deltas[steps.deltas.c]) end
+			operation = false
+		else
+			steps.deltas.c = steps.deltas.c +1
+			steps.deltas[steps.deltas.c] = v
+			operation = true
+		end
+	end
+
+	if(steps.deltas.c == 0) then return 0 end
+	if(steps.deltas.mayor == 0) then return 0 end
+
+	for i=1, steps.deltas.c do
+		steps.sizes[i]= steps.deltas[i] / steps.deltas.mayor
+
+		steps[i]= {}
+		steps[i][0]= arg[(i*2)-1]
+
+		for j=1, steps.deltas.mayor do
+			steps[i][j]= steps[i][j-1] + steps.sizes[i]
+		end
+
+	end
+
+	return steps
+end
+
+function get_isteps( ... )
+	steps = get_steps(...)
+
+	if steps ~= 0 then
+		for i=1, steps.deltas.c do
+			for j=1, steps.deltas.mayor do
+				steps[i][j] = math.floor(steps[i][j])
+			end
+		end 
+
+		return steps
+	else
+		return 0
+	end
+end
+
+
+
+--CLASS------------------------------------------------------------------------
+Canvas= {}
+
+--Constructor==================================================================
+Canvas.new= function(xl, yl, zl)
+	xl= xl or 1
+	yl= yl or 1
+	zl= zl or 1
+
+	working_layer= 1
+
+	if xl == 0 then xl=1 end
+	if yl == 0 then yl=1 end
+	if zl == 0 then zl=1 end
+
+	local self = {}
+
+--ATRIBUTOS====================================================================
+	limits_= {x=xl, y=yl, z=zl}
+	context_={}
+
+    --inicializamos el contexto con las dimenciones dadas
+	for k=1, zl do
+		context_[k]= {}
+		
+		for j=1, yl do
+			context_[k][j] = {}
+			
+			for i=1, xl do
+			context_[k][j][i] = 0
+			end
+		end  
+	end
+
+--METODOS======================================================================
+	self.write= function(xp, yp, v)
+		if  xp> limits_.x or
+			xp< 1          or
+			yp> limits_.y or
+			yp< 1 or
+		    context_[working_layer][yp] == nil or
+		    context_[working_layer][yp][xp] == nil then
+		    return false
+		else
+			context_[working_layer][yp][xp] =  v
+			return true
+		end
+	end
+
+	self.writeLine= function (x, y, xf, yf, v)
+		x= x or 0
+		y= y or 0
+		xf= xf or 0
+		yf= yf or 0
+		steps= get_isteps( x, xf, y, yf )
+		if steps ~= 0 then
+
+			self.write( steps[1][0], steps[2][0], v)
+
+			for i=1, steps.deltas.mayor do
+				self.write( steps[1][i], steps[2][i], v)
+			end 
+		end
+	end
+
+	self.writeSquare= function (x, y, xf, yf, v, h)
+
+		h= h or 1
+
+		for i=1, h do
+			x_init=x+i-1
+			y_init=y+i-1
+			x_final=xf+i-1
+			y_final=yf+i-1
+
+			self.writeLine(x_init,   y_init,   x_final, y_init,    v)
+			self.writeLine(x_final,  y_init,   x_final, y_final, v)
+			self.writeLine(x_final,  y_final,  x_init,  y_final,   v)
+			self.writeLine(x_init,   y_final,  x_init,  y_init,  v)
+
+		end
+	end
+
+	self.writeFormFile= function(x, y, f)
+		l= get_file_lines(f)
+
+		file= fs.open(f, "r")
+		for i=1, l do
+			local yp= y + i-1
+			line = file.readLine()
+			for j=1, #line do
+				local xp= x+j-1
+				local c = line:sub(j,j)
+				--Manejando exprecion x10,1;
+				if c == "x" then
+					--buscando cantidad
+					indi= j
+					repeat
+						indi = inidi+1
+						exp_c= line:sub(indi,indi)
+					until exp_c == ","
+
+					c= line:sub(indi+1,indi+1)
+
+					for j=j+1,indi-1 do
+						self.write( xp+j-1, yp, c)
+					end
+				end
+				--self.write( xp, yp, c)
+			end
+		end
+		file.close()
+	end
+
+	self.printAll= function()
+		local form_layer= working_layer
+		for k=1, limits_.z do
+			self.set_layer(k)
+			write( self.string_layer() )
+		end
+		self.set_layer(form_layer)
+	end
+
+	self.printLayer= function(L)
+
+		print( self.string_layer() )
+	end
+
+--ACCESORS_____________________________________________________________________
+	self.working_layer = function () return working_layer end
+	self.limit_z= function() return limits_.z end
+
+
+	self.layer = function()
+		l = context_[working_layer]
+		l.w= limits_.x
+		l.h= limits_.y
+		return l
+	end
+
+	self.string_layer = function ()
+		if working_layer > limits_.z  then return "" .. "NILL" .. "" end
+		local l = ""
+		l= l .. "----".. working_layer .. "----" .. "\n" 
+			for j=1, limits_.y do
+				for i=1, limits_.x do
+						l = l .. context_[working_layer][j][i]
+					end
+					l= l .. "\n" 
+			end
+		return l
+	end
+
+--MUTATORS_____________________________________________________________________
+	self.set_layer= function(l)
+		if l > limits_.z or
+		   l < 1 or
+		   l == working_layer then
+		   return false end
+		working_layer = l
+		return true
+	end
+
+	return self
+end
+-------------------------------------------------------------------------------
+
