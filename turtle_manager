@@ -22,14 +22,11 @@ TurtleManager.new= function()
     local self = {}
 
 --ATRIBUTOS====================================================================
-
-    print("tm>Linkeando con tortuga")
-    t_= turtle
-    print("turtle    : " .. os.getComputerLabel() )
-    steps_for_return= 0
-    ubication_= {x=0, y=-1, z=0}
-    direction_= "+y"
-    status_   = ""
+    local t_= turtle
+    local steps_for_return= 0
+    local ubication_= {x=0, y=-1, z=0}
+    local direction_= "+y"
+    local status_   = ""
 
 
 --METODOS======================================================================
@@ -293,10 +290,8 @@ TurtleManager.new= function()
 
     self.walk= function(c, z)
 
-        if steps_for_return>= t_.getFuelLevel()-c and status_ ~= "charge" then
-            d= self.direction()
+        if steps_for_return >= t_.getFuelLevel()-c and status_ ~= "charge" then
             self.fuelCharge();
-            self.set_direction(d)
         end
 
        for i=1, c do
@@ -322,11 +317,11 @@ TurtleManager.new= function()
             self.walk(c, -1)
         end
 
-        return { x=self.x(), y=self.y(), z=self.z(), d= self.direction() }  
+        return
     end
 
     self.direction_of_point_x= function(x, b)
-        result = ""
+        local result = ""
         --Debemos saber si la x es positiva, negativa o igual
         --verificamos hacia donde esta el punto, segun nuestra direccion 
         if x > b  then
@@ -454,24 +449,25 @@ TurtleManager.new= function()
     end
 
     self.fuelCharge= function()
+        local u= self.ubication()
+        local neetReturn= false
+
         status_= "charge"
-        u= self.ubication()
-        neetReturn= false
 
         if ubication_.y ~= -1 or ubication_.z ~= 0 or ubication_.x ~= 0 then
             self.returnToOutpost()
             neetReturn= true
         end
 
-        slot= t_.getSelectedSlot()
+        local slot= t_.getSelectedSlot()
 
         self.set_direction("-x")
         t_.select(16)
-        while t_.getFuelLevel() <= 80 do
+        while t_.getFuelLevel() <= 400 do
             t_.suck(1)
             t_.refuel(1)
         end
-        print("cargado :" .. t_.getFuelLevel() )
+
         t_.select(slot)
 
         if neetReturn then
@@ -487,8 +483,9 @@ TurtleManager.new= function()
     end
 
     self.blockCharge= function(b)
+
         status_= "charge"
-        u= self.ubication()
+        local u= self.ubication()
 
         if ubication_.y ~= -1 or ubication_.z ~= 0 or ubication_.x ~= 0 then
             self.returnToOutpost()
@@ -505,7 +502,6 @@ TurtleManager.new= function()
 
         self.moveTo(0  , 0  ,0)
         self.moveTo(0, 0, u.z)
-        print(u.x.."-"..u.y .."-"..u.z)
         self.moveTo(u.x, 0, u.z)
         self.moveTo(u.x, u.y, u.z)
 
@@ -527,7 +523,7 @@ TurtleManager.new= function()
 
         while not t_.getItemDetail() or t_.getItemDetail().name ~= b do
 
-            slot= t_.getSelectedSlot()+1
+            local slot= t_.getSelectedSlot()+1
             if slot == 16 then
                 slot= 1
                 t_.select(slot)
