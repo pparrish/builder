@@ -1,0 +1,547 @@
+function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+
+--class------------------------------------------------------------------------
+TurtleManager = {}
+
+--Constructor==================================================================
+TurtleManager.new= function()
+    local self = {}
+
+--ATRIBUTOS====================================================================
+
+    print("tm>Linkeando con tortuga")
+    t_= turtle
+    print("turtle    : " .. os.getComputerLabel() )
+    steps_for_return= 0
+    ubication_= {x=0, y=-1, z=0}
+    direction_= "+y"
+    status_   = ""
+
+
+--METODOS======================================================================
+
+--ACCESORS_____________________________________________________________________
+    self.ubication= function() return deepcopy(ubication_) end
+    self.x=         function() return ubication_.x end
+    self.y=         function() return ubication_.y end
+    self.z=         function() return ubication_.z end
+    self.direction= function() return direction_ end
+    self.status=    function() return status_ end
+
+--MUTATORS_____________________________________________________________________
+    self.set_direction = function(d)
+
+        if d == direction_ then 
+            return
+        end
+
+        -- traducimos d, segun hacia donde miremos
+        if     d == "+y" then
+
+            if direction_ == "-y" then
+                d = "b"
+            end
+
+            if direction_ == "+x" then
+                d = "l"
+            end
+
+            if direction_ == "-x" then
+                d = "r"
+            end
+
+        elseif d == "-y" then
+
+            if direction_ == "+y" then
+                d = "b"
+            end
+
+            if direction_ == "-x" then
+                d = "r"
+            end
+
+            if direction_ == "+x" then
+                d = "l"
+            end
+
+        elseif d == "+x" then
+
+            if direction_ == "-x" then
+                d = "b"
+            end
+
+            if direction_ == "-y" then
+                d = "l"
+            end
+
+            if direction_ == "+y" then
+                d = "r"
+            end
+
+        elseif d == "-x"  then
+
+            if direction_ == "+x" then
+                d = "b"
+            end
+
+            if direction_ == "+y" then
+                d = "l"
+            end
+
+            if direction_ == "-y" then
+                d = "r"
+            end
+        end
+
+        --Probamos cada caso para cada direccion en la que este la tortuga, segun 
+        --hacia donde este mirando
+
+        --Mirando hacia el eje y
+        if direction_ == "+y" then
+            
+            if d == "b" then
+                t_.turnLeft()
+                t_.turnLeft()
+                direction_= "-y"
+            end
+            
+            if d == "r" then
+                t_.turnRight()
+                direction_= "+x"
+            end
+
+            if d == "l" then
+                t_.turnLeft()
+                direction_= "-x"
+            end
+
+        --Mirando contra el eje y
+        elseif direction_ == "-y" then
+
+            if d == "b" then
+                t_.turnLeft()
+                t_.turnLeft()
+                direction_= "+y"
+            end
+
+            if d == "r" then
+                t_.turnRight()
+                direction_= "-x"
+            end
+
+            if d == "l" then
+                t_.turnLeft()
+                direction_= "+x"
+            end
+
+        --Mirando hacia el eje x
+        elseif direction_ == "+x" then
+
+            if d == "b" then
+                t_.turnLeft()
+                t_.turnLeft()
+                direction_= "-x"
+            end
+
+            if d == "r" then
+                t_.turnRight()
+                direction_= "-y"
+            end
+
+            if d == "l" then
+                t_.turnLeft()
+                direction_= "+y"
+            end
+        
+        --Mirando contra el eje x
+        elseif direction_ == "-x" then
+
+            if d == "b" then
+                t_.turnLeft()
+                t_.turnLeft()
+                direction_= "+x"
+            end
+
+            if d == "r" then
+                t_.turnRight()
+                direction_= "+y"
+            end
+
+            if d == "l" then
+                t_.turnLeft()
+                direction_= "-y"
+            end
+        end
+    end
+
+    self.set_ubication = function(x, y, z)
+        ubication_.x = x
+        ubication_.y = y
+        ubication_.z = z
+    end
+
+
+--MOVIMIENTO DE LA TORTUGA_____________________________________________________
+    self.step_and_ubicate= function(z)
+        z = z or 0
+
+        --La tortuga se mueve sobre el plano
+        if z == 0 then
+
+            if t_.forward() then
+
+                --Segun el eje al cual vea, suma o resta a su coordenada
+                if direction_ == "+y" then
+
+                    ubication_.y= ubication_.y+1
+
+                    if ubication_.y > 0 then
+                        steps_for_return = steps_for_return+1
+                    end
+                    if ubication_.y < 0 then
+                        steps_for_return = steps_for_return-1
+                    end
+                end
+
+                if direction_ == "-y" then
+
+                    ubication_.y = ubication_.y-1
+
+                    if ubication_.y > 0 then
+                        steps_for_return = steps_for_return-1
+                    end
+                    if ubication_.y < 0 then
+                        steps_for_return = steps_for_return+1
+                    end
+                end
+
+                if direction_ == "+x" then
+
+                    ubication_.x= ubication_.x+1
+
+                    if ubication_.x > 0 then
+                        steps_for_return = steps_for_return+1
+                    end
+                    if ubication_.x < 0 then
+                        steps_for_return = steps_for_return-1
+                    end
+                end
+
+                if direction_ == "-x" then
+
+                    ubication_.x= ubication_.x-1
+
+                    if ubication_.x > 0 then
+                        steps_for_return = steps_for_return-1
+                    end
+                    if ubication_.x < 0 then
+                        steps_for_return = steps_for_return+1
+                    end
+                end
+            end
+
+        --La tortuga se mueve hacia arriba
+        elseif z == 1 then
+
+            if t_.up() then
+
+                ubication_.z= ubication_.z +1
+
+                if ubication_.z > 0 then
+                    steps_for_return= steps_for_return+1
+                end
+                if ubication_.z < 0 then
+                    steps_for_return = steps_for_return-1
+                end
+            end
+
+                return self.ubication()
+        --La tortuga se mueve hacia abajo
+        elseif z == -1 then
+
+            if t_.down() then
+
+                ubication_.z= ubication_.z -1
+
+                if ubication_.z > 0 then
+                    steps_for_return = steps_for_return-1
+                end
+                if ubication_.z < 0 then
+                    steps_for_return = steps_for_return+1
+                end
+            end
+
+            return self.ubication()
+
+        end
+
+    end
+
+    self.walk= function(c, z)
+
+        if steps_for_return>= t_.getFuelLevel()-c and status_ ~= "charge" then
+            d= self.direction()
+            self.fuelCharge();
+            self.set_direction(d)
+        end
+
+       for i=1, c do
+            local t= self.step_and_ubicate(z)
+       end
+    end
+
+    self.move= function(d, c)
+        d= d or "f" --puede ser f: adelante b: atras r: derecha l: izquierda u:arriba d: abajo
+        c= c or 0   --los pasos que dara hacia la direccionindicada
+        
+        --Cambiamos la direccion segun nos movamos, la tortuga gira tambien
+        self.set_direction(d)
+
+        --Movemos la totuga, dependiendo del eje
+        if (d == "f") or (d == "r") or (d == "l")  or (d == "b") then
+            self.walk(c, 0)
+
+        elseif d == "u" then
+            self.walk(c, 1)
+
+        elseif d == "d" then
+            self.walk(c, -1)
+        end
+
+        return { x=self.x(), y=self.y(), z=self.z(), d= self.direction() }  
+    end
+
+    self.direction_of_point_x= function(x, b)
+        result = ""
+        --Debemos saber si la x es positiva, negativa o igual
+        --verificamos hacia donde esta el punto, segun nuestra direccion 
+        if x > b  then
+
+            if self.direction() == "+y" then
+                result= "l" 
+
+            elseif self.direction() == "-y" then
+                result= "r"
+
+            elseif self.direction() == "+x" then
+                result= "b"
+
+            elseif self.direction() == "-x" then
+                result= "f"
+            end
+
+        elseif x < b  then
+
+            if self.direction() == "+y" then
+                result= "r" 
+
+            elseif self.direction() == "-y" then
+                result= "l"
+
+            elseif self.direction() == "+x" then
+                result= "f"
+
+            elseif self.direction() == "-x" then
+                result= "b"
+            end
+
+        else
+            result= "N"
+        end
+
+        return result
+    end
+
+    self.direction_of_point_y= function(y, b)
+        result = ""
+        --Debemos saber si la x es positiva, negativa o igual
+        --verificamos hacia donde esta el punto, segun nuestra direccion 
+        if y > b then
+
+            if self.direction() == "+y" then
+                result= "b"
+
+            elseif self.direction() == "-y" then
+                result= "f"
+
+            elseif self.direction() == "+x" then
+                result= "r"
+
+            elseif self.direction() == "-x" then
+                result= "l"
+            end
+
+        elseif y < b then
+
+            if self.direction() == "+y" then
+                result= "f"
+
+            elseif self.direction() == "-y" then
+                result= "b"
+
+            elseif self.direction() == "+x" then
+                result= "l"
+
+            elseif self.direction() == "-x" then
+                result= "r"
+            end
+
+        else
+
+            result= "N"
+        end
+
+        return result
+    end
+
+    self.direction_of_point_z= function(z, b)
+        result = ""
+        --Debemos saber si la x es positiva, negativa o igual
+        --verificamos hacia donde esta el punto, segun nuestra direccion 
+        if z > b then
+            result= "d"
+
+        elseif z < b then
+            result= "u"
+
+        else
+            result= "N"
+
+        end
+
+        return result
+    end
+
+    self.moveTo= function(i, j, k)
+
+        local giros = {x, y, z, mx, my, mz}
+        local d = ""
+        local m = 0
+
+        d= self.direction_of_point_x(self.x(), i)
+        m= math.abs( i-self.x() )
+        giros.x = d
+        giros.mx= m
+        self.move(d, m)
+
+        d= self.direction_of_point_y(self.y(), j)
+        m= math.abs( j-self.y() )
+        giros.y = d
+        giros.my= m
+        self.move(d, m)
+
+        d= self.direction_of_point_z(self.z(), k)
+        m= math.abs( k-self.z() )
+        giros.z = d
+        giros.mz= m
+        self.move(d, m)
+
+        return giros
+    end
+
+    self.fuelCharge= function()
+        status_= "charge"
+        u= self.ubication()
+        neetReturn= false
+
+        if ubication_.y ~= -1 or ubication_.z ~= 0 or ubication_.x ~= 0 then
+            self.returnToOutpost()
+            neetReturn= true
+        end
+
+        slot= t_.getSelectedSlot()
+
+        self.set_direction("-x")
+        t_.select(16)
+        while t_.getFuelLevel() <= 80 do
+            t_.suck(1)
+            t_.refuel(1)
+        end
+        print("cargado :" .. t_.getFuelLevel() )
+        t_.select(slot)
+
+        if neetReturn then
+            self.moveTo(0  , 0  ,0)
+            self.moveTo(0, 0, u.z)
+            self.moveTo(u.x, 0, u.z)
+            self.moveTo(u.x, u.y, u.z)
+        end
+
+        self.set_direction("+y")
+
+        status_= ""
+    end
+
+    self.blockCharge= function(b)
+        status_= "charge"
+        u= self.ubication()
+
+        if ubication_.y ~= -1 or ubication_.z ~= 0 or ubication_.x ~= 0 then
+            self.returnToOutpost()
+        end
+
+        self.set_direction("+x")
+
+        while not t_.getItemDetail() or t_.getItemDetail().count < 1 do
+            t_.suck(1)
+            if t_.getItemDetail() and t_.getItemDetail().name ~= b then
+                t_.dropUp();
+            end
+        end
+
+        self.moveTo(0  , 0  ,0)
+        self.moveTo(0, 0, u.z)
+        print(u.x.."-"..u.y .."-"..u.z)
+        self.moveTo(u.x, 0, u.z)
+        self.moveTo(u.x, u.y, u.z)
+
+        self.set_direction("+y")
+        status_= ""
+
+    end
+
+    self.returnToOutpost= function()
+        self.moveTo( self.x(), 0, self.z() )
+        self.moveTo(0, 0, self.z() )
+        self.moveTo(0, 0, 0)
+        self.moveTo(0, -1, 0)
+        self.set_direction("+y")
+    end
+
+    --COLOCAR BLOQUES______________________________________________________________
+    self.putBlock = function(b)
+
+        while not t_.getItemDetail() or t_.getItemDetail().name ~= b do
+
+            slot= t_.getSelectedSlot()+1
+            if slot == 16 then
+                slot= 1
+                t_.select(slot)
+                self.blockCharge(b)
+            end
+            t_.select(slot)
+        end
+
+        t_.placeDown()
+    end
+
+    -------------------------------------------------------------------------------
+    self.fuelCharge();
+    return self
+end
+-----------------------------------------------------------------------------------
+
